@@ -33,6 +33,15 @@ add_executable(${CMAKE_PROJECT_NAME})
 set(MX_Defines_Syms 
 	STM32N657xx
     $<$<CONFIG:Debug>:DEBUG>
+    USE_FULL_ASSERT
+    USE_FULL_LL_DRIVER
+    VECT_TAB_SRAM
+    LL_ATON_DUMP_DEBUG_API
+    LL_ATON_PLATFORM=LL_ATON_PLAT_STM32N6
+    LL_ATON_OSAL=LL_ATON_OSAL_BARE_METAL
+    LL_ATON_RT_MODE=LL_ATON_RT_ASYNC
+    LL_ATON_SW_FALLBACK
+    LL_ATON_DBG_BUFFER_INFO_EXCLUDED=1
 )
 # System include paths
 set(MX_Include_Dirs
@@ -43,6 +52,10 @@ set(MX_Include_Dirs
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Include
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/DSP/Include
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/STM32N6570-DK
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/Devices/STM32N6xx/
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton
+    ${CMAKE_CURRENT_SOURCE_DIR}/Model
 )
 
 
@@ -53,6 +66,8 @@ set(MX_Application_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/syscalls.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Device/ST/STM32N6xx/Source/Templates/gcc/startup_stm32n657xx.s
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/app_fuseprogramming.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Model/network.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Model/stai_network.c
 )
 
 # STM32 HAL/LL Drivers
@@ -80,13 +95,26 @@ set(STM32_Drivers_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/STM32N6570-DK/stm32n6570_discovery.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Components/mx66uw1g45g/mx66uw1g45g.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Components/aps256xx/aps256xx.c
+    # all files needed for neural network inference.
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/Devices/STM32N6xx/npu_cache.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/Devices/STM32N6xx/mcu_cache.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton/ll_aton.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton/ll_aton_rt_main.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton/ll_aton_runtime.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton/ll_aton_cipher.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton/ll_aton_stai_internal.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton/ll_aton_util.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton/ll_sw_float.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton/ll_sw_integer.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton/ll_aton_lib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton/ll_aton_lib_sw_operators.c
 )
 
 
 
 # Link directories setup
 set(MX_LINK_DIRS
-
+${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Lib/GCC/ARMCortexM55
 )
 # Project libraries
 set (MX_LINK_LIBS 

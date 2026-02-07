@@ -22,10 +22,17 @@
 #include "stm32n6570_discovery_xspi.h"
 #include "stm32n6570_discovery.h"
 
+#include "stai.h"
+#include "stai_network.h"
+
 #include "app_fuseprogramming.h"
 #include "main.h"
 
 UART_HandleTypeDef huart1;
+
+// NN related variables
+stai_ptr nn_in;
+STAI_NETWORK_CONTEXT_DECLARE(network_context, STAI_NETWORK_CONTEXT_SIZE)
 
 static void SystemClock_Config(void);
 static void CONSOLE_Config(void);
@@ -33,6 +40,13 @@ static void Security_Config(void);
 static void IAC_Config(void);
 static void set_clk_sleep_mode(void);
 static void Hardware_init(void);
+
+
+static void NPURam_enable(void);
+static void NPUCache_config(void);
+static void Run_Inference(stai_network *network_instance);
+static void NeuralNetwork_init(uint32_t *nn_in_length, stai_ptr *nn_out, stai_size *number_output, int32_t nn_out_len[]);
+
 
 
 /**
@@ -47,6 +61,50 @@ int main(void)
   while (1) {
     printf("Hello World\n");
     HAL_Delay(1000);
+  }
+}
+
+static void Run_Inference(stai_network *network_instance) {
+  stai_return_code ret;
+
+  do {
+    ret = stai_network_run(network_instance, STAI_MODE_ASYNC);
+    if (ret == STAI_RUNNING_WFE)
+      LL_ATON_OSAL_WFE();
+  } while (ret == STAI_RUNNING_WFE || ret == STAI_RUNNING_NO_WFE);
+
+  ret = stai_ext_network_new_inference(network_instance);
+  assert(ret == STAI_SUCCESS);
+}
+
+static void NeuralNetwork_init(uint32_t *nn_in_length, stai_ptr *nn_out, stai_size *number_output, int32_t nn_out_len[])
+{
+  stai_network_info info;
+  int ret;
+
+  /* initialize runtime */
+  ret = stai_runtime_init();
+  assert(ret == STAI_SUCCESS);
+  /* init model instance */
+  ret = stai_network_init(network_context);
+  assert(ret == STAI_SUCCESS);
+
+  ret = stai_network_get_info(network_context, &info);
+  assert(ret == STAI_SUCCESS);
+  assert(info.n_inputs == 1);
+  *number_output = STAI_NETWORK_OUT_NUM;
+
+  /* Get the input buffer size & address */
+  *nn_in_length = info.inputs[0].size_bytes;
+  ret = stai_network_get_inputs(network_context, &nn_in, (stai_size *)&info.n_inputs);
+  assert(ret == STAI_SUCCESS);
+
+  /* Get the output buffers size & address */
+  ret = stai_network_get_outputs(network_context, nn_out, number_output);
+  assert(ret == STAI_SUCCESS);
+  for (int i = 0; i < *number_output; i++)
+  {
+    nn_out_len[i] = info.outputs[i].size_bytes;
   }
 }
 
@@ -143,6 +201,11 @@ static void set_clk_sleep_mode(void)
 
 }
 
+
+static void NPUCache_config(void)
+{
+  npu_cache_enable();
+}
 
 static void Security_Config(void)
 {
