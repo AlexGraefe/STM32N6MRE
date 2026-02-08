@@ -1,3 +1,5 @@
+# file adapted from a ST notebook example
+
 from datetime import datetime
 import glob
 import os
@@ -107,72 +109,70 @@ class CallibationDataset(CalibrationDataReader):
 
         self.enum_data = None  # Reset the enumeration of calibration data
 
+if __name__ == "__main__":
+    os.makedirs("generated_files", exist_ok=True)
+    input_model = "generated_files/simple_fc.onnx"
+    infer_model = "generated_files/simple_fc_infer.onnx"
+    quant_model = "generated_files/simple_fc_quant.onnx"
 
-input_model = "./simple_fc.onnx"
-infer_model = "./simple_fc_infer.onnx"
-quant_model = "./simple_fc_quant.onnx"
+    fc = SimpleFC()
 
-fc = SimpleFC()
+    # Training loop to fit f(x, y) = x + y*2
+    optimizer = torch.optim.Adam(fc.parameters(), lr=0.001)
+    criterion = nn.MSELoss()
 
-# Training loop to fit f(x, y) = x^2 + y^2
-optimizer = torch.optim.Adam(fc.parameters(), lr=0.001)
-criterion = nn.MSELoss()
+    num_epochs = 1000
+    batch_size = 64
 
-num_epochs = 1000
-batch_size = 64
+    for epoch in range(num_epochs):
+        # Generate random training data
+        inputs = torch.randn(batch_size, 2)
+        targets = (inputs[:, 0] + inputs[:, 1]*2).unsqueeze(1)
+        
+        # Forward pass
+        outputs = fc(inputs)
+        loss = criterion(outputs, targets)
+        
+        # Backward pass and optimization
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        if (epoch + 1) % 100 == 0:
+            print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
-for epoch in range(num_epochs):
-    # Generate random training data
-    inputs = torch.randn(batch_size, 2)
-    targets = (inputs[:, 0]**2 + inputs[:, 1]**2).unsqueeze(1)
-    
-    # Forward pass
-    outputs = fc(inputs)
-    loss = criterion(outputs, targets)
-    
-    # Backward pass and optimization
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-    
-    if (epoch + 1) % 100 == 0:
-        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
+    # export the model to ONNX format
+    example_inputs = torch.Tensor([[0.5, 0.5]])
+    onnx_program = torch.onnx.export(
+        fc,
+        example_inputs,
+        dynamo=True,
+    )
+    onnx_program.save(input_model)
 
-example_inputs = torch.Tensor([[0.5, 0.5]])
-print(fc(example_inputs))
-# exit()
+    # Quantize the model
+    quantization.quant_pre_process(input_model_path=input_model, output_model_path=infer_model, skip_optimization=False)
+    dr = CallibationDataset(input_model)
+    quantize_static(
+            infer_model,
+            quant_model,
+            dr,
+            calibrate_method=CalibrationMethod.MinMax, 
+            quant_format=QuantFormat.QDQ,
+            per_channel=True,
+            weight_type=QuantType.QInt8, 
+            activation_type=QuantType.QInt8, 
+            reduce_range=True,
+            extra_options={'WeightSymmetric': True, 'ActivationSymmetric': False})
 
-onnx_program = torch.onnx.export(
-    fc,
-    example_inputs,
-    dynamo=True,
-)
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    print(current_time + ' - ' + '{} model has been created.'.format(os.path.basename(quant_model)))
 
-
-onnx_program.save(input_model)
-quantization.quant_pre_process(input_model_path=input_model, output_model_path=infer_model, skip_optimization=False)
-
-dr = CallibationDataset("./simple_fc.onnx")
-
-quantize_static(
-        infer_model,
-        quant_model,
-        dr,
-        calibrate_method=CalibrationMethod.MinMax, 
-        quant_format=QuantFormat.QDQ,
-        per_channel=True,
-        weight_type=QuantType.QInt8, 
-        activation_type=QuantType.QInt8, 
-        reduce_range=True,
-        extra_options={'WeightSymmetric': True, 'ActivationSymmetric': False})
-
-now = datetime.now()
-current_time = now.strftime("%H:%M:%S")
-print(current_time + ' - ' + '{} model has been created.'.format(os.path.basename(quant_model)))
-
-quantized_session = onnxruntime.InferenceSession(quant_model)
-input_name = quantized_session.get_inputs()[0].name
-label_name = quantized_session.get_outputs()[0].name
-data = example_inputs.numpy()
-result = quantized_session.run([label_name], {input_name: data.astype(np.float32)})[0]
-print(result)
+    # Run inference with the quantized model
+    quantized_session = onnxruntime.InferenceSession(quant_model)
+    input_name = quantized_session.get_inputs()[0].name
+    label_name = quantized_session.get_outputs()[0].name
+    data = example_inputs.numpy()
+    result = quantized_session.run([label_name], {input_name: data.astype(np.float32)})[0]
+    print(result)

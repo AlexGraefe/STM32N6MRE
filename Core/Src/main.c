@@ -59,11 +59,10 @@ int main(void)
   Hardware_init();
 
   printf("Hardware initialized\n");
-  printf("Hello there, I am alive\n");
+  printf("Hello there, I am alive!\n");
 
   /*** NN Init ****************************************************************/
   printf("Initializing Neural Network\n");
-  uint32_t pitch_nn = 0;
   uint32_t nn_in_len = 0;
   stai_size number_output = 0;
   stai_ptr nn_out[STAI_NETWORK_OUT_NUM] = {0};
@@ -85,12 +84,15 @@ int main(void)
     for (int j = 0; j < 16; j+=2) {
       input[0] = trial_inputs[j];
       input[1] = trial_inputs[j+1];
-      printf("Starting inference\n");
-      SCB_CleanInvalidateDCache_by_Addr(nn_in, nn_in_len);
+      SCB_CleanInvalidateDCache_by_Addr(nn_in, nn_in_len);  // ensure data is flushed to memory before starting inference
       Run_Inference(network_context);
-      printf("Inference done\n");
-      float real_result = trial_inputs[j] * trial_inputs[j] + trial_inputs[j+1] * trial_inputs[j+1];
-      printf("%f, %f -> %f, (%f)", trial_inputs[j], trial_inputs[j+1], *((float *)nn_out[0]), real_result - *((float *)nn_out[0]));
+      float real_result = trial_inputs[j] + trial_inputs[j+1] * 2;
+      printf("%7.4f, %7.4f -> %7.4f, error= %7.4f \n",
+        trial_inputs[j], 
+        trial_inputs[j+1], 
+        *((float *)nn_out[0]),
+        real_result - *((float *)nn_out[0])
+      );
       HAL_Delay(1000);
     }
     i++;

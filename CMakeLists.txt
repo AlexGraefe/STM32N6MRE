@@ -1,3 +1,5 @@
+# This file has been taken from a STM32CubeMX generated project and modified to generate a running example.
+
 cmake_minimum_required(VERSION 3.22)
 
 # Setup compiler settings
@@ -20,7 +22,7 @@ set(STM32_MCU_FLAGS  "-mcpu=cortex-m55 -mfpu=fpv5-d16 -mfloat-abi=hard -mcmse" )
 
 #Linker options
 set(STM32_LINKER_SCRIPT linker/STM32N657xx.ld)
-set(STM32_LINKER_OPTION "-u _printf_float")
+set(STM32_LINKER_OPTION "-u _printf_float")  # enable float support in printf
 
 # Set the project name
 set(CMAKE_PROJECT_NAME Appli)
@@ -34,6 +36,7 @@ set(MX_Defines_Syms
 	STM32N657xx
     $<$<CONFIG:Debug>:DEBUG>
     USE_FULL_ASSERT
+    # Options for LL_ATON (neural network runtime library for the NPU)
     USE_FULL_LL_DRIVER
     VECT_TAB_SRAM
     LL_ATON_DUMP_DEBUG_API
@@ -51,7 +54,7 @@ set(MX_Include_Dirs
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32N6xx_HAL_Driver/Inc/Legacy
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Include
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/DSP/Include
-    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/STM32N6570-DK
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/STM32N6570-DK  # needed for bsp components like flash and external RAM
     ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/Devices/STM32N6xx/
     ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Npu/ll_aton
@@ -122,7 +125,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Lib/GCC/ARMCortexM55
 set (MX_LINK_LIBS 
     STM32_Drivers
     ${TOOLCHAIN_LINK_LIBRARIES}
-    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Lib/GCC/ARMCortexM55/NetworkRuntime1100_CM55_GCC.a
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/stedgeai-lib/Lib/GCC/ARMCortexM55/NetworkRuntime1100_CM55_GCC.a  # Needed for SW fallback of the NPU runtime
 )
 
 # Interface library for includes and symbols
@@ -204,6 +207,7 @@ set(SIGNING_TOOL "STM32_SigningTool_CLI")
 # Define the input and output files for Appli
 set(Appli_INPUT "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.bin")
 set(Appli_OUTPUT "${CMAKE_BINARY_DIR}/Appli-trusted.bin")
+
 
 # Add a post-build step to sign the Appli binary
 add_custom_command(

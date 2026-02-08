@@ -295,3 +295,4 @@ __marimo__/
 *.bin
 st_ai_output/
 st_ai_ws/
+generated_files/
