@@ -1,7 +1,8 @@
 # Installation
 1. Install STM32CubeCLT: https://www.st.com/en/development-tools/stm32cubeclt.html
 2. Install STEdgeAi-Core: https://www.st.com/en/development-tools/stedgeai-core.html
-3. Install VSCode and the CMakeTools and C/C++ extension.
+3. Install VSCode and in VSCode, the CMakeTools and C/C++ extension.
+4. Reopen VSCode. It should ask you to select a configure preset. Select Debug. If it does not show, enter ctrl + shift + P and search for CMake: Select Configure Preset. Press enter and select Debug.
 4. Generate a virtual environment with Python 3.12 (tested version, others might also work):
     ```bash
     python3.12 -m venv ./venv
