@@ -7272,7 +7272,7 @@ void TIM_Base_SetConfig(TIM_TypeDef *TIMx, const TIM_Base_InitTypeDef *Structure
   /* Generate an update event to reload the Prescaler
      and the repetition counter (only for advanced timer) value immediately */
   TIMx->EGR = TIM_EGR_UG;
-
+  printf("%lu, %lu\r\n", TIMx->ARR, Structure->Period);
   TIMx->CR1 = tmpcr1;
 }
 

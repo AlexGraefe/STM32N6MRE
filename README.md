@@ -37,3 +37,6 @@
     ```
     Set Boot 1 to 0 and reset.
 6. Open a serial terminal and connect to the STM32N6 (baudrate 115200). You should see some prints.
+
+# How to use peripherals.
+Use CubeMX to generate the code to initialize the peripherals and then copy it. In [`./Core/Inc/stm32n6xx_hal_conf.h`](./Core/Inc/stm32n6xx_hal_conf.h) uncomment the line #define HAL_<peripherl>_MODULE_ENABLED

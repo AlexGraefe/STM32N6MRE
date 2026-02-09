@@ -30,6 +30,10 @@
 
 UART_HandleTypeDef huart1;
 
+// timer
+TIM_HandleTypeDef htim6;
+static uint32_t tim6_prescaler = 5000;   // sampling time 50us
+
 // NN related variables
 stai_ptr nn_in;
 STAI_NETWORK_CONTEXT_DECLARE(network_context, STAI_NETWORK_CONTEXT_SIZE)
@@ -39,7 +43,9 @@ static void CONSOLE_Config(void);
 static void Security_Config(void);
 static void IAC_Config(void);
 static void set_clk_sleep_mode(void);
+static void Timer_Config(void);
 static void Hardware_init(void);
+static void Error_Handler(void);
 
 
 static void NPURam_enable(void);
@@ -79,13 +85,19 @@ int main(void)
                          0.5, -0.5,
                          -0.5, 0.5,
                          -0.5, -0.5}; 
+  float sampling_time_us = (float) (1 / 400.0f * tim6_prescaler);  // in us
+  
   while (1) {
     float *input = (float *)nn_in;
     for (int j = 0; j < 16; j+=2) {
       input[0] = trial_inputs[j];
       input[1] = trial_inputs[j+1];
       SCB_CleanInvalidateDCache_by_Addr(nn_in, nn_in_len);  // ensure data is flushed to memory before starting inference
+      uint16_t start_time = __HAL_TIM_GET_COUNTER(&htim6);
       Run_Inference(network_context);
+      uint16_t end_time = __HAL_TIM_GET_COUNTER(&htim6);
+      float time_taken = ((uint16_t) (end_time - start_time)) * sampling_time_us;  // convert to us
+      printf("Inference time: %7.0f us, ", time_taken);
       float real_result = trial_inputs[j] + trial_inputs[j+1] * 2;
       printf("%7.4f, %7.4f -> %7.4f, error= %7.4f \n",
         trial_inputs[j], 
@@ -166,6 +178,8 @@ static void Hardware_init(void)
   SystemClock_Config();
 
   CONSOLE_Config();
+
+  Timer_Config();
 
   NPURam_enable();
 
@@ -403,6 +417,7 @@ static void SystemClock_Config(void)
     while(1);
   }
 
+  // init peripherals clocks
   RCC_PeriphCLKInitStruct.PeriphClockSelection = 0;
 
   /* XSPI1 kernel clock (ck_ker_xspi1) = HCLK = 200MHz */
@@ -413,10 +428,62 @@ static void SystemClock_Config(void)
   RCC_PeriphCLKInitStruct.PeriphClockSelection |= RCC_PERIPHCLK_XSPI2;
   RCC_PeriphCLKInitStruct.Xspi2ClockSelection = RCC_XSPI2CLKSOURCE_HCLK;
 
+  // timer clock source set to same as sysb_ck
+  RCC_PeriphCLKInitStruct.PeriphClockSelection |= RCC_PERIPHCLK_TIM;
+  RCC_PeriphCLKInitStruct.TIMPresSelection = RCC_TIMPRES_DIV1;
+
+
   if (HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct) != HAL_OK)
   {
     while (1);
   }
+}
+
+/**
+  * @brief Timer initialization funciton
+  * @param None
+  * @retval None
+  */
+static void Timer_Config(void)
+{
+  // Note: input clock to timer is 400MHz 
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  // configure timer 6 as a stopwatch to measure inference time. 
+  // It will run continuously and we will read the counter value before and after inference to get the time taken.
+  // enable clock
+  __HAL_RCC_TIM6_CLK_ENABLE();
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = tim6_prescaler - 1;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 65535;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  HAL_TIM_Base_Start(&htim6);
+
+}
+
+/**
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
+static void Error_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1)
+  {
+  }
+  /* USER CODE END Error_Handler_Debug */
 }
 
 static void CONSOLE_Config()

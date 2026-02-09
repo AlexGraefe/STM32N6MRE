@@ -94,6 +94,8 @@ set(STM32_Drivers_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32N6xx_HAL_Driver/Src/stm32n6xx_hal_rif.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32N6xx_HAL_Driver/Src/stm32n6xx_hal_cacheaxi.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32N6xx_HAL_Driver/Src/stm32n6xx_hal_uart.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32N6xx_HAL_Driver/Src/stm32n6xx_hal_tim.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32N6xx_HAL_Driver/Src/stm32n6xx_hal_tim_ex.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32N6xx_HAL_Driver/Src/stm32n6xx_hal_ramcfg.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/STM32N6570-DK/stm32n6570_discovery_xspi.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/STM32N6570-DK/stm32n6570_discovery.c
